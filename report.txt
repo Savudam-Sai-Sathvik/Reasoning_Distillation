@@ -1,0 +1,119 @@
+“Even though I have taken help from the following students and LLMs in terms of discussing ideas and coding practices, all my code is written by me.” I have used Gemini and Claude for ideas and debugging the errors.
+Dataset generation:
+I have tried various ways to get the good quality chain of thought from the teacher. This is essential because the entire pipeline depends on good quality data from the teacher model. 
+The prompts I tried are(for 2000 samples per languages):
+Simple step by step CoT. (2743/10000 correct predictions)
+Socratic prompt, I asked to evaluate each option and question whether it applied the correct logic, actual words or assumptions. Summarise and think if it has eliminated options too quickly. (3452/10000 correct predictions)
+For multilingual reasoning I asked to translate questions and options into English and then do socratic reasoning. ( 3647/10000 correct predictions)
+Teacher model accuracies across languages:
+Prompt1
+Language      Correct      Total   Accuracy
+-------------------------------------------
+bengali           521       1934     26.9%
+en                939       1961     47.9%
+hindi             549       1953     28.1%
+kannada           368       1904     19.3%
+tamil             366       1921     19.1%
+-------------------------------------------
+TOTAL            2743       9673     28.4%
+
+Prompt2:(questioning improved the accuracy)
+-------------------------------------------
+bengali           674       1963     34.3%
+en               1087       1980     54.9%
+hindi             730       1959     37.3%
+kannada           469       1939     24.2%
+tamil             492       1954     25.2%
+-------------------------------------------
+TOTAL            3452       9795     35.2%
+
+Prompt3:(translation improved the accuracy)
+-------------------------------------------
+bengali           717       1931     37.1%
+en               1114       1977     56.3%
+hindi             781       1945     40.2%
+kannada           532       1913     27.8%
+tamil             503       1896     26.5%
+-------------------------------------------
+TOTAL            3647       9662     37.7%
+Hard thing to note accuracy not equal to good reasoning CoT
+Temp =0.7 top= 0.9
+Number of samples per language:
+2000 for each language
+6000 English, 2000 Hindi, 150 Bengali, 500 for Tamil and Kannada
+These are two experiments I did, one is a linguistically balanced dataset and the other is an English heavy dataset with 60%. The reason I thought the goal of distillation is to learn the reasoning part from the teacher to solve the MCQ. English has high accuracy so it makes more correct answers, and it can be directly transferable to other languages. After training and testing the difference is not high, the balanced dataset slightly improved the accuracy.  The reason is that Qwen 2.5 1.5B has reasonable accuracy of 22% before distillation. 
+
+Base student model accuracies:
+In-Family (Qwen2.5-1.5B-Instruct):
+Base model
+2026-04-26 17:28:23,381 | INFO | BENGALI ACCURACY: 5.20
+2026-04-26 17:28:23,381 | INFO | EN ACCURACY: 22.00
+2026-04-26 17:28:23,381 | INFO | HINDI ACCURACY: 4.20
+2026-04-26 17:28:23,381 | INFO | KANNADA ACCURACY: 3.80
+2026-04-26 17:28:23,381 | INFO | OVERALL ACCURACY: 8.80
+
+Trained model on 2k per language, SFT plus forward KL
+2026-04-26 17:07:47,535 | INFO | Saved 2000 predictions to output1/predictions_qwen.jsonl
+2026-04-26 17:07:47,628 | INFO | BENGALI ACCURACY: 18.80
+2026-04-26 17:07:47,628 | INFO | EN ACCURACY: 34.20
+2026-04-26 17:07:47,628 | INFO | HINDI ACCURACY: 22.40
+2026-04-26 17:07:47,628 | INFO | KANNADA ACCURACY: 15.80
+2026-04-26 17:07:47,629 | INFO | OVERALL ACCURACY: 22.80
+
+Simple Sft on 6k en
+2026-04-26 21:58:24,211 | INFO | BENGALI ACCURACY: 20.40
+2026-04-26 21:58:24,211 | INFO | EN ACCURACY: 35.80
+2026-04-26 21:58:24,211 | INFO | HINDI ACCURACY: 22.60
+2026-04-26 21:58:24,211 | INFO | KANNADA ACCURACY: 12.20
+2026-04-26 21:58:24,211 | INFO | TAMIL ACCURACY: 14.60
+2026-04-26 21:58:24,211 | INFO | OVERALL ACCURACY: 21.12
+
+Qwen 0.5KL+SFT on 6k en
+2026-04-27 02:09:27,274 | INFO | BENGALI ACCURACY: 19.60
+2026-04-27 02:09:27,274 | INFO | EN ACCURACY: 34.80
+2026-04-27 02:09:27,274 | INFO | HINDI ACCURACY: 21.40
+2026-04-27 02:09:27,275 | INFO | KANNADA ACCURACY: 13.80
+2026-04-27 02:09:27,275 | INFO | TAMIL ACCURACY: 16.80
+2026-04-27 02:09:27,275 | INFO | OVERALL ACCURACY: 21.28
+
+Cross-Family (LLaMA-3.2-1B-Instruct):
+Lamma(seq-seq training or next token prediction) 6K en
+2026-04-26 23:05:47,008 | INFO | BENGALI ACCURACY: 17.60
+2026-04-26 23:05:47,008 | INFO | EN ACCURACY: 22.80
+2026-04-26 23:05:47,008 | INFO | HINDI ACCURACY: 18.40
+2026-04-26 23:05:47,008 | INFO | KANNADA ACCURACY: 12.20
+2026-04-26 23:05:47,008 | INFO | TAMIL ACCURACY: 12.20
+2026-04-26 23:05:47,008 | INFO | OVERALL ACCURACY: 16.64
+
+Base model(2k each)
+2026-04-27 11:18:10,977 | INFO | Bengali ACCURACY: 3.20
+2026-04-27 11:18:10,977 | INFO | English ACCURACY: 2.80
+2026-04-27 11:18:10,978 | INFO | Hindi ACCURACY: 6.80
+2026-04-27 11:18:10,978 | INFO | Kannada ACCURACY: 8.40
+2026-04-27 11:18:10,978 | INFO | Tamil ACCURACY: 4.00
+2026-04-27 11:18:10,978 | INFO | OVERALL ACCURACY: 5.04
+
+Lamma(seq-seq training or next token prediction) balan(2k each language)
+2026-04-27 09:17:27,570 | INFO | BENGALI ACCURACY: 14.80
+2026-04-27 09:17:27,570 | INFO | EN ACCURACY: 24.00
+2026-04-27 09:17:27,570 | INFO | HINDI ACCURACY: 18.40
+2026-04-27 09:17:27,570 | INFO | KANNADA ACCURACY: 12.40
+2026-04-27 09:17:27,570 | INFO | TAMIL ACCURACY: 13.60(data leakage)
+2026-04-27 09:17:27,570 | INFO | OVERALL ACCURACY: 16.64
+
+Lamma(seq-seq training or next token prediction) balan(2k each language) 2 epochs
+2026-04-27 10:54:42,583 | INFO | Bengali ACCURACY: 19.60
+2026-04-27 10:54:42,583 | INFO | English ACCURACY: 23.20
+2026-04-27 10:54:42,583 | INFO | Hindi ACCURACY: 22.80
+2026-04-27 10:54:42,583 | INFO | Kannada ACCURACY: 13.60
+2026-04-27 10:54:42,583 | INFO | Tamil ACCURACY: 18.40(data leakage)
+2026-04-27 10:54:42,583 | INFO | OVERALL ACCURACY: 19.52
+
+
+I tried offpolicy Distillation with forward KL divergence plus SFT
+The reason I tried this is because simple SFT is good when the teacher's reasoning is really accurate. Correct answers do not imply good reasoning. Adding the KL term with temperature = 2 makes the student learn that the teacher doesn't know everything, it is uncertain, so it won’t blindly hallucinate. 
+
+
+KL improves accuracy for low data resource languages like Tamil and Kannada.  But making an underconfident student on less data and on multilingual MCQ answering is not desired as you can see in the case of Llamma training for 2 epochs improving the performance.  We can’t use KL for cross family distillation as the tokens don’t match because of different tokenizers used during pretraining. We can only do the next token prediction over the reasoning of the teacher. So the only way to get good accuracy is to get a high quality reasoning dataset from the teacher. 
+
+More experimentations would have concluded the findings, the other methods might be online distillation, I didn't have the time to implement it. 
